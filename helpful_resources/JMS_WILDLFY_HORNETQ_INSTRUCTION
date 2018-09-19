@@ -1,0 +1,116 @@
+[How to create Remotely Accessible JMS Queue]
+[Creation Manual]
+1. Create Remote Queue
+	a. create Application user and it's new group on wildfly 
+		e.g. user : appuser 
+			 password : *******
+			 group : appuser
+
+
+2. Changes in standalone.xml
+	a. add extention
+		<extensions>
+			......
+			<extension module="org.jboss.as.messaging"/>
+			......
+		<extensions>
+
+	b. Add new subsystem which contains your JMS server , in our case it is hornetQ, enable remote connector/connector factory, then create remote factory and queue
+
+		<subsystem xmlns="urn:jboss:domain:messaging:3.0">
+            <hornetq-server>
+
+                <connectors>
+                    <http-connector name="http-connector" socket-binding="http">
+                        <param key="http-upgrade-endpoint" value="http-acceptor"/>
+                    </http-connector>
+                    <http-connector name="http-connector-throughput" socket-binding="http">
+                        <param key="http-upgrade-endpoint" value="http-acceptor-throughput"/>
+                        <param key="batch-delay" value="50"/>
+                    </http-connector>
+                    <in-vm-connector name="in-vm" server-id="0"/>
+                </connectors>
+
+                <acceptors>
+                    <http-acceptor http-listener="default" name="http-acceptor"/>
+                    <http-acceptor http-listener="default" name="http-acceptor-throughput">
+                        <param key="batch-delay" value="50"/>
+                        <param key="direct-deliver" value="false"/>
+                    </http-acceptor>
+                    <in-vm-acceptor name="in-vm" server-id="0"/>
+                </acceptors>
+
+                <security-settings>
+                    <security-setting match="#">
+                        <permission type="send" roles="appuser"/>
+                        <permission type="consume" roles="appuser"/>
+                    </security-setting>
+                </security-settings>
+
+                <jms-connection-factories>
+                    <connection-factory name="InVmConnectionFactory">
+                        <connectors>
+                            <connector-ref connector-name="in-vm"/>
+                        </connectors>
+                        <entries>
+                            <entry name="java:/ConnectionFactory"/>
+                        </entries>
+                    </connection-factory>
+                    <connection-factory name="RemoteConnectionFactory">
+                        <connectors>
+                            <connector-ref connector-name="http-connector"/>
+                        </connectors>
+                        <entries>
+                            <entry name="java:jboss/exported/jms/RemoteConnectionFactory"/>
+                        </entries>
+                        <ha>true</ha>
+                        <block-on-acknowledge>true</block-on-acknowledge>
+                        <reconnect-attempts>-1</reconnect-attempts>
+                    </connection-factory>
+                    <pooled-connection-factory name="hornetq-ra">
+                        <transaction mode="xa"/>
+                        <connectors>
+                            <connector-ref connector-name="in-vm"/>
+                        </connectors>
+                        <entries>
+                            <entry name="java:/JmsXA"/>
+                            <entry name="java:jboss/DefaultJMSConnectionFactory"/>
+                        </entries>
+                    </pooled-connection-factory>
+                </jms-connection-factories>
+
+                <jms-destinations>
+                    <jms-queue name="myQueue">
+                        <entry name="queues/myQueue"/>
+                        <entry name="java:jboss/exported/queues/myQueue"/>
+                    </jms-queue>
+                    <jms-queue name="TestQ">
+                        <entry name="java:jboss/exported/TestQ"/>
+                        <durable>false</durable>
+                    </jms-queue>
+                    <jms-topic name="testTopic">
+                        <entry name="jms/topic/test"/>
+                        <entry name="java:jboss/exported/jms/topic/test"/>
+                    </jms-topic>
+                </jms-destinations>
+            </hornetq-server>
+        </subsystem>
+
+
+
+
+[Creation through CLI]
+        you can also create above configuration using cli command
+        $ cd /PATH/TO/wildfly-8.2.1.Final/bin
+		$ ./jboss-cli.sh -c
+		 
+		[standalone@localhost:9990 /] /subsystem=messaging/hornetq-server=default/jms-queue=TestQ/:add(entries=["java:/jboss/exported/jms/queue/TestQ"],durable=false)
+		  {"outcome" => "success"}
+		   
+		[standalone@localhost:9990 /] :reload
+		  {
+		    "outcome" => "success",
+		    "result" => undefined
+		  }
+
+		 

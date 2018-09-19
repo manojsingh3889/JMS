@@ -1,0 +1,13 @@
+.classpath  
+.idea/*
+.myeclipse/*
+.myhibernatedata
+.mymetadata  
+.mystrutsdata  
+.myumldata  
+.project
+.settings/*
+.tern-project
+bin/*
+/bin/
+target/

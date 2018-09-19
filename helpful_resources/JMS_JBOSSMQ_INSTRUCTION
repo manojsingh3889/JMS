@@ -1,0 +1,8 @@
+[JMS JBOSS4]
+
+In JBOSS 4 
+1. create destination in $JBOSS_HOME/server/default/deploy/jms/jbossmq-destinations-service.xml
+2. Add queue destination.
+3. Since Connectionfactory is already there so its not needed.
+
+look for commonQ, bonusQ, emailQ in jbossmq-destinations-service.xml

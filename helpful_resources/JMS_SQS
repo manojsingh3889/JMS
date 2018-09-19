@@ -1,0 +1,4 @@
+[JMS JBOSS4]
+
+In JBOSS 4 
+1. create QUEUE in SQS and add data to JMS.properties accordingly
